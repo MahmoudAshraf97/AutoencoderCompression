@@ -3,29 +3,30 @@ Learned image compression is a promising field fueled by the recent breakthrough
 
 # Results
 
-The Kodak Dataset is used as a standard test suite for compression testing. We were able to achieve around a 56:1 compression ratio which is approximately 0.43 bpp. The results will be shown in a triplet format consisting of the original image, a BPG compressed image at the same bpp, and our result.
+The Kodak Dataset is used as a standard test suite for compression testing. We were able to achieve around a 104:1 compression ratio which is approximately 0.23 bpp. The results will be shown in a triplet format consisting of the original image, our result, and a BPG compressed image at the same bpp.
 
-![Kodim20](images/20.jpg?raw=true)
+![Kodim04](images/result_4.webp?raw=true)
 
-![Kodim21](images/21.jpg?raw=true)
+![Kodim13](images/result_13.webp?raw=true)
+
+![Kodim21](images/result_21.webp?raw=true)
+
+![Kodim24](images/result_24.webp?raw=true)
+
 
 # Usage
 1. Download the pretrained model weights from the following link and place it in the same directory as the other files
-https://drive.google.com/file/d/1HAxbZoMH32Xo-0eTFv_ErjGZVzIK8Kp5/view
+https://drive.google.com/file/d/1m-kJzcKYwo5X2t4vo1JM1Vkr1mrQ1cWW/view?usp=sharing
 
-2. The model needs to be recompiled in the environment that it will be used in, simply running train.py will modify model.h5 to work in your environment
-```
-python train.py
-```
 
-3. For compression run using the following arguments format: compression_lzma.py *model path* *image path* , can accept single or directory arguments
+2. For compression run using the following arguments format: compression_lzma.py *model path* *image path* , can accept single or directory arguments
 ```
-python compress_lzma.py model.h5 kodak/
+python compress.py final_model kodak/
 ```
 
-4. For decompression run using the following arguments format: compression_lzma.py *model path* *binary path* , can accept single or directory arguments
+3. For decompression run using the following arguments format: compression_lzma.py *model path* *binary path* , can accept single or directory arguments
 ```
-python decompress_lzma.py model.h5 outputs/binary/
+python decompress.py final_model outputs/binary/
 ```
 
 # Introduction
@@ -58,29 +59,29 @@ The Encoder: Encodes the image into a latent representation. It is composed of s
 
 The Quantizer: Rounds the resultant latent code to the nearest integer to use an integer data type in order to reduce the storage footprint. Since the quantization process is non-differentiable, it cannot be used during the training phase thus it is simulated by the addition of uniformly distributed random noise from -0.5 to 0.5.
 
-The Context-Based Entropy Model: Consists of a masked convolution layer; which masks certain pixels to force the model to predict on ones already seen thus performing as context. This is followed by three 1x1 convolutional layers. We use a gaussian mixture model (GMM) to infer the probability distribution of the quantized codes [3]. 
+The Entropy Model: Calculates the bottleneck tensor information contents and it's trained to minimize it in order to achieve the lowest bits per pixel for the current hyperparameters[3]. 
 
 ![Entropy Model](images/entropy.png?raw=true)
 
 The Decoder: Reconstructs the image from the quantization representations. It performs upsampling on the feature vector using subpixel convolutions. Its structure is identical to a reversed encoder where GDN transformation is inverted and upsampling blocks are used instead of downsampling.
+
 The training then aims to minimize the loss tradeoff equation: L = &lambda;<sub>d</sub>L<sub>d</sub>(x , x&#770;) + &lambda;<sub>R</sub>L<sub>R</sub>(z)
 
 Where L<sub>R</sub> is a rate loss, and L<sub>d</sub> is the distortion loss, z is the quantized latent code, x and x&#770; are the original and reconstructed images respectively, and lambdas are weights. The equation simply expresses the tricky balance between the bit-rate, distortion artifacts, and image perception and similarity. 
 
-For distortion loss we used a weighted average of several metrics. Mean absolute error, MS-SSIM, and VGG loss. Traditional mean error loss produced very good color accuracy reproduction but the result was blurred due to the averaging nature of the metric. MS-SSIM loss helped improve the sharpness of the result but it is a simple, shallow function that fails to simulate human perception. The usage of deep feature maps of pretrained CNN architectures proved to be an excellent perceptual metric for image reconstruction which mimics human perception better than the traditional metrics. [4]
+For distortion loss we used a weighted sum of several metrics. Mean absolute error, MS-SSIM, and LPIPS loss. Traditional mean error loss produced very good color accuracy reproduction but the result was blurred due to the averaging nature of the metric. MS-SSIM loss helped improve the sharpness and the details in the textured parts of the result but it is a simple, shallow function that fails to simulate human perception. The usage of Learned Perceptual Image Patch Similarity (LPIPS) metric deep feature maps of pretrained CNN architectures proved to be an excellent perceptual metric for image reconstruction which mimics human perception better than the traditional metrics. [4]
 
 ![Entropy Model](https://github.com/richzhang/PerceptualSimilarity/blob/master/imgs/fig1.png?raw=true)
 
-VGG loss was calculated as the L1 distance between feature maps obtained after the 'block5_conv4' which helped enhance the details of the image and reduced the effect of the compression on the performance of classification CNNs when compressed images are used.
+
 
 # Training
 
-The network was trained for 10 epochs using 256x256 images using a batch size of 8 from the training subset of the dataset. d , R were 0.9 and 0.1 respectively. Two Nvidia GTX 1080 Ti 11GB GPUs were used for training, each epoch took about 7 hours to complete. We found no benefit from using larger images or bigger datasets. Cyclic learning rate schedule and ADAM optimizer with base LR equal to 1e-5 and a maximum LR equal to 1e-4.
+The network was trained for 10 epochs using 256x256 images using a batch size of 8 from the training subset of the dataset. &lambda; = 0.1. One Nvidia RTX 2080 Ti 11GB GPU was used for training, each epoch took about 1.7 hours to complete. We found no benefit from using larger images or bigger datasets. Cyclic learning rate schedule and ADAM optimizer with base LR equal to 1e-5 and a maximum LR equal to 1e-4.
 
 # Discussion and Conclusion
 
-As shown in the results, our results show more preservation of fine detail than BPG but the large details are slightly more blurred, also our results have a slight shift towards zero and hence appear slightly underexposed. Learned compression techniques have no advantage over traditional techniques in >0.1 bpp region but they excel in the sub 0.1 bpp region where the traditional compression techniques start to show block artifacts and distortion.
-Our results show that the learned compression has a promising future as we demonstrated that basic architecture results are comparable to the SOTA traditional methods. The autoencoder architecture is also capable of other tasks such as denoising and super resolution which will not result in additional computation because no extra parameters are needed. The proposed modifications to improve the results are increasing R to encourage further bit cost reduction and examine different loss functions as they showed the most significant effect on results. We also recommend substituting the Leaky RELU activation function with Parametric RELU
+As shown in the results, our results show more preservation of fine detail than BPG and don't show any blocking artifacts. Our results show that the learned compression has a promising future as we demonstrated that basic architecture results are comparable to the SOTA traditional methods. The autoencoder architecture is also capable of other tasks such as denoising and super resolution which will not result in additional computation because no extra parameters are needed. The proposed modifications to improve the results are decreasing &lambda; to encourage further bpp reduction but this requires significantly more training iterations and examine different weights for the distortion loss components as they showed the most significant effect on results. We also recommend substituting the Leaky RELU activation function with Parametric RELU. The next planned improvements on this project are using a hyperprior entropy model in order to reduce the BPP while perserving the same quality and implementing a GAN module to enhance the reconstruction of the details
 
 # References
 
