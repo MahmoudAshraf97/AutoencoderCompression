@@ -172,7 +172,10 @@ class AutoencoderModel(tf.keras.Model):
 
     def call(self, x, training):
         """Computes rate and distortion losses."""
-        entropy_model = tfc.ContinuousBatchedEntropyModel(self.prior, coding_rank=3, compression=False)
+        entropy_model = tfc.ContinuousBatchedEntropyModel(self.prior,
+                                                          coding_rank=3,
+                                                          compression=False,
+                                                          bottleneck_dtype=tf.keras.mixed_precision.global_policy().variable_dtype)
 
         y = self.analysis_transform(x)
         y_hat, bits = entropy_model(y, training=training)
