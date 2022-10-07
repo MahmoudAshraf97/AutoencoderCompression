@@ -19,12 +19,12 @@ The Kodak Dataset is used as a standard test suite for compression testing. We w
 https://drive.google.com/file/d/1m-kJzcKYwo5X2t4vo1JM1Vkr1mrQ1cWW/view?usp=sharing
 
 
-2. For compression run using the following arguments format: compression_lzma.py *model path* *image path* , can accept single or directory arguments
+2. For compression run using the following arguments format: compress.py *model path* *image path* , can accept single or directory arguments
 ```
 python compress.py final_model kodak/
 ```
 
-3. For decompression run using the following arguments format: compression_lzma.py *model path* *binary path* , can accept single or directory arguments
+3. For decompression run using the following arguments format: decompress.py *model path* *binary path* , can accept single or directory arguments
 ```
 python decompress.py final_model outputs/binary/
 ```
