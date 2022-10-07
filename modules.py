@@ -7,7 +7,6 @@ from tensorflow.keras.models import Model
 
 from tensorflow.keras.layers import Input, Conv2D, Add, Lambda, Multiply, Softmax
 from tensorflow.keras.layers import LeakyReLU
-from tensorflow.keras.applications import VGG19
 from LPIPS import LPIPSLoss
 
 
